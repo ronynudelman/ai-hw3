@@ -29,7 +29,54 @@ def get_top_b_features(x, y, b=5, k=51):
     top_b_features_indices = []
 
     # ====== YOUR CODE: ======
-    raise NotImplementedError
+    top_b_features_indices = [i for i in range(x.shape[1])]
+    x_after_cut = x
+    while x_after_cut.shape[1] > b:
+        column_index_to_remove = 0
+        best_acc = 0
+        for column_index in range(x_after_cut.shape[1]):
+            x_try = np.delete(x_after_cut, column_index, 1)
+            avg_list = []
+            kf = KFold(n_splits=5, shuffle=True, random_state=ID)
+            for train_indexes, test_indexes in kf.split(x_try):
+                neigh = KNNClassifier(k=k)
+                neigh.train(x_try[train_indexes], y[train_indexes])
+                y_train_pred = neigh.predict(x_try[test_indexes])
+                curr_acc = accuracy(y[test_indexes], y_train_pred)
+                avg_list.append(curr_acc)
+            avg_acc = sum(avg_list) / len(avg_list)
+            acc = avg_acc
+            if acc >= best_acc:
+                best_acc = acc
+                column_index_to_remove = column_index
+        x_after_cut = np.delete(x_after_cut, column_index_to_remove, 1)
+        del top_b_features_indices[column_index_to_remove]
+    # assume the features are {1, 2, 3, ..., d}
+    # set features_group = {1, 2, 3, ..., d}
+    # while len(features_group) > b:
+    #   for each subset of features_group with size len(features_group)-1:
+    #       run K-fold on this subset of features_group
+    #       save the accuracy of K-fold run
+    #   set features_group to the subset with the best accuracy
+    # return features_group
+    #
+    # Example:
+    # We start with features {1, 2, 3, 4}
+    # We run K-fold on the sets:
+    #   {1, 2, 3}
+    #   {1, 2, 4}
+    #   {1, 3, 4}
+    #   {2, 3, 4}
+    #
+    # Now we choose the set with the best accuracy.
+    # Lets say it's the set {1, 2, 4}
+    # Now we run K-fold on the sets:
+    # {1, 2}
+    # {1, 4}
+    # {2, 4}
+    #
+    # Now choose the set with the best accuracy
+    # And so on... until we get a set with size == b and return it
     # ========================
 
     return top_b_features_indices
@@ -55,7 +102,7 @@ if __name__ == '__main__':
             To run the cross validation experiment over the K,Threshold hyper-parameters
             uncomment below code and run it
     """
-    # run_cross_validation()
+    run_cross_validation()
 
     # # ========================================================================
 
@@ -65,7 +112,7 @@ if __name__ == '__main__':
                                                          target_attribute='Outcome')
 
     best_k = 51
-    b = 0
+    b = 4
 
     # # ========================================================================
 
